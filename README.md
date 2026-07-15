@@ -104,6 +104,7 @@ kubectl logs pod | s2 redact -f ~/.secrets
 | `s2 encrypt` | Encrypt an existing plaintext file with age |
 | `s2 decrypt` | Decrypt an age-encrypted file |
 | `s2 edit` | Decrypt → $EDITOR → re-encrypt |
+| `s2 health` | Exit 0 if the file(s) decrypt with their stored passphrase. Decrypt-only — no provider resolution (no SSM/Vault calls), no writes. A health check for a secret file's encryption key. |
 | `s2 redact` | Pipe filter replacing secret values with `[REDACTED]` |
 | `s2 scan` | Scan files for secrets (regex patterns + entropy analysis) |
 | `s2 completions` | Generate shell completion scripts (bash, zsh, fish, powershell) |
@@ -260,7 +261,7 @@ Require Touch ID on macOS before any secret is decrypted or injected:
 biometric = true
 ```
 
-When enabled, `s2 exec`, `s2 edit`, `s2 decrypt`, and `s2 set` trigger a Touch ID prompt. Commands that don't access secrets (`s2 scan`, `s2 hook`, `s2 list` on plaintext files) don't prompt.
+When enabled, `s2 exec`, `s2 edit`, `s2 decrypt`, `s2 set`, and `s2 health` trigger a Touch ID prompt. Commands that don't access secrets (`s2 scan`, `s2 hook`, `s2 list` on plaintext files) don't prompt.
 
 Existing keychain items auto-migrate to biometric protection on next access. On Linux or headless systems, the option is ignored.
 

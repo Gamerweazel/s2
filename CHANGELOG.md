@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `s2 health` — exit 0 if the given secret file(s) decrypt with their stored passphrase. Decrypt-only: builds no provider registry, so it makes no SSM/Vault calls and never rewrites the file. A failure means the passphrase is missing or wrong, not that a remote provider was unreachable — a clean health check for a secret file's encryption key.
+
 ## [1.8.1] - 2026-06-09
 
 ### Fixed

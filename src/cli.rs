@@ -133,6 +133,18 @@ pub enum Command {
         path: PathBuf,
     },
 
+    /// Health-check secret file(s): confirm they decrypt with their stored passphrase.
+    /// No provider resolution (no SSM/Vault calls), no writes. Exit 0 = all decrypt.
+    Health {
+        /// Secret files to check
+        #[arg(short = 'f', long = "file", value_name = "FILE")]
+        files: Vec<PathBuf>,
+
+        /// Use a named profile from config
+        #[arg(short = 'p', long = "profile")]
+        profile: Option<String>,
+    },
+
     /// Scan files for secrets (pattern matching + entropy analysis)
     Scan {
         /// Files or directories to scan (default: current directory)
