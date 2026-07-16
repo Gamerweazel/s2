@@ -15,15 +15,19 @@ pub fn run(config: &Config, files: Vec<PathBuf>, profile: Option<String>) -> Res
     let files = config.resolve_files(&files, &profile)?;
 
     for path in &files {
-        let canonical = path
-            .canonicalize()
-            .map_err(|_| S2Error::FileNotFound(path.clone()))?;
+        let canonical = path.canonicalize().map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                S2Error::FileNotFound(path.clone())
+            } else {
+                S2Error::Io(e)
+            }
+        })?;
 
         permissions::check_permissions(&canonical)?;
 
         let bytes = std::fs::read(&canonical)?;
         if !crypto::is_age_encrypted(&bytes) {
-            eprintln!("not age-encrypted: {}", canonical.display());
+            eprintln!("File is not age-encrypted: {}", canonical.display());
             std::process::exit(1);
         }
 
