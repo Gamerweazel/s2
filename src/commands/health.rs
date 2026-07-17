@@ -328,15 +328,14 @@ fn probe_providers(
     Ok(())
 }
 
-/// Distinguish "reached but forbidden" from "couldn't reach / no creds". AWS surfaces
-/// authorization failures as `AccessDeniedException` / "not authorized"; anything else
-/// (dispatch failure, no credentials, region/DNS) is treated as unreachable.
+/// Distinguish "reached but forbidden" from "couldn't reach / no creds". The provider
+/// layer classifies AWS failures from the typed error code and surfaces an authorization
+/// denial as `S2Error::ProviderAccessDenied`; every other failure (dispatch failure, no
+/// credentials, region/DNS) arrives as `S2Error::Provider` and is treated as unreachable.
 fn classify_provider_error(err: &S2Error) -> Reason {
-    let msg = err.to_string();
-    if msg.contains("AccessDenied") || msg.contains("not authorized") {
-        Reason::AccessDenied
-    } else {
-        Reason::ProviderUnreachable
+    match err {
+        S2Error::ProviderAccessDenied(_) => Reason::AccessDenied,
+        _ => Reason::ProviderUnreachable,
     }
 }
 
@@ -414,17 +413,17 @@ mod tests {
     }
 
     #[test]
-    fn access_denied_classified_from_message() {
+    fn access_denied_maps_from_typed_variant_not_message() {
+        // The provider layer classifies AWS failures from the typed error code and hands
+        // back distinct variants (see `ssm::classify_probe_error`). The health layer maps
+        // the variant, never the message string — so an IAM denial reaches `access_denied`
+        // and everything else reaches `provider_unreachable`.
         assert_eq!(
-            classify_provider_error(&S2Error::Provider(
-                "SSM health probe on '/p/': AccessDeniedException: no perms".into()
-            )),
+            classify_provider_error(&S2Error::ProviderAccessDenied("denied on '/p/'".into())),
             Reason::AccessDenied
         );
         assert_eq!(
-            classify_provider_error(&S2Error::Provider(
-                "SSM health probe on '/p/': dispatch failure".into()
-            )),
+            classify_provider_error(&S2Error::Provider("dispatch failure".into())),
             Reason::ProviderUnreachable
         );
     }
