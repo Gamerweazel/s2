@@ -76,6 +76,38 @@ impl SecretProvider for SsmProvider {
         })
     }
 
+    fn health_check(&self, hints: &[SecretUri]) -> Result<(), S2Error> {
+        // Distinct prefixes to probe. Each referenced URI path is normalized to the
+        // hierarchy prefix that `GetParametersByPath` (and the `*`-import path) uses,
+        // matching how scoped IAM policies (`.../secrets/*`) authorize listing. If no
+        // ssm:/// URIs were referenced, probe root as a best-effort reachability check.
+        let mut prefixes = super::distinct_prefixes(hints);
+        if prefixes.is_empty() {
+            prefixes.push("/".to_string());
+        }
+
+        self.rt.block_on(async {
+            let client = self.build_client().await;
+            for prefix in &prefixes {
+                // max_results(1) + with_decryption(false): no KMS decrypt, no plaintext
+                // secret in memory. A successful call (even with zero rows) proves
+                // reachability, credential/region/profile resolution, and the
+                // ssm:GetParametersByPath grant on this prefix.
+                client
+                    .get_parameters_by_path()
+                    .path(prefix)
+                    .with_decryption(false)
+                    .max_results(1)
+                    .send()
+                    .await
+                    .map_err(|e| {
+                        S2Error::Provider(format!("SSM health probe on '{prefix}': {e}"))
+                    })?;
+            }
+            Ok(())
+        })
+    }
+
     fn resolve_prefix(
         &self,
         uri: &SecretUri,

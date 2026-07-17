@@ -133,8 +133,11 @@ pub enum Command {
         path: PathBuf,
     },
 
-    /// Health-check secret file(s): confirm they decrypt with their stored passphrase.
-    /// No provider resolution (no SSM/Vault calls), no writes. Exit 0 = all decrypt.
+    /// Health-check secret file(s): walk a detection-gated chain — existence →
+    /// permissions → decryption (if age-encrypted) → provider (if ssm:/// refs present)
+    /// — and report the outcome and a classified reason. Human summary on stderr by
+    /// default; pass --json for a machine-readable report per file on stdout. No writes.
+    /// Exit 0 = all files healthy.
     Health {
         /// Secret files to check
         #[arg(short = 'f', long = "file", value_name = "FILE")]
@@ -143,6 +146,10 @@ pub enum Command {
         /// Use a named profile from config
         #[arg(short = 'p', long = "profile")]
         profile: Option<String>,
+
+        /// Output a JSON report per file on stdout (one object per line)
+        #[arg(long)]
+        json: bool,
     },
 
     /// Scan files for secrets (pattern matching + entropy analysis)

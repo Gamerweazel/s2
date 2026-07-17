@@ -93,7 +93,11 @@ fn main() {
 
         Command::Edit { path } => commands::edit::run(&config, path),
 
-        Command::Health { files, profile } => commands::health::run(&config, files, profile),
+        Command::Health {
+            files,
+            profile,
+            json,
+        } => commands::health::run(&config, files, profile, json),
 
         Command::Redact { files, profile } => {
             let (registry, cache) = init_providers(&config, &profile);
