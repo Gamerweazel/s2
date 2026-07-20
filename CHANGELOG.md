@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `s2 health` — exit 0 if the given secret file(s) decrypt with their stored passphrase. Decrypt-only: builds no provider registry, so it makes no SSM/Vault calls and never rewrites the file. A failure means the passphrase is missing or wrong, not that a remote provider was unreachable — a clean health check for a secret file's encryption key.
+- `s2 health` — non-destructive preflight that reports whether secret file(s) are usable, and *why*. Walks a detection-gated chain (existence → permissions → decryption → provider, each stage running only if it applies and every prior stage passed) and classifies the outcome into a stable `reason` code. Human summary on stderr by default; `--json` emits one report per file (JSONL) on stdout with per-stage results, so a consumer (e.g. a CI/deploy secrets preflight) branches on `stages.decryption` to self-heal a churned passphrase without being tripped by a transient provider/network failure. The provider stage is a scoped reachability + authorization probe (one SSM `GetParametersByPath` per referenced prefix, no secret values pulled, no cache written); an IAM denial is reported as `access_denied`, distinct from `provider_unreachable`. Never writes. See README → Health checks.
 
 ## [1.8.1] - 2026-06-09
 
